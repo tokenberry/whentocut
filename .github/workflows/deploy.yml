@@ -1,0 +1,32 @@
+name: Deploy to droplet
+
+# Auto-deploy: on every push to these branches, SSH into the DigitalOcean droplet and
+# redeploy. Runs on GitHub's infrastructure (not the dev sandbox), so it can reach the
+# droplet directly. Configure the secrets listed in DEPLOY.md before enabling.
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch: {} # allow manual "Run workflow" from the Actions tab
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: ${{ secrets.DROPLET_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${DEPLOY_DIR:-/opt/whentocut}"
+            ./scripts/deploy.sh "${{ github.ref_name }}"

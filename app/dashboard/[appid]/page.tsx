@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { buildSnapshot } from "@/lib/steam/aggregate";
-import { fetchPartnerStats, PartnerNotImplementedError } from "@/lib/steam/partnerClient";
+import { getPartnerStatsForApp } from "@/lib/steam/partnerData";
+import { PartnerStats } from "@/lib/steam/partnerClient";
 import { inputFromSnapshot } from "@/lib/recommendation/fromSnapshot";
 import { recommend } from "@/lib/recommendation/engine";
 import { Recommendation } from "@/lib/recommendation/types";
@@ -35,17 +36,13 @@ export default async function Dashboard({
 
   let snapshot: GameSnapshot | null = null;
   let rec: Recommendation | null = null;
+  let partner: PartnerStats | null = null;
   let error: string | null = null;
 
   try {
     snapshot = await buildSnapshot(appid);
     if (snapshot) {
-      let partner = null;
-      try {
-        partner = await fetchPartnerStats(appid, null);
-      } catch (e) {
-        if (!(e instanceof PartnerNotImplementedError)) throw e;
-      }
+      partner = await getPartnerStatsForApp(appid);
       rec = recommend(inputFromSnapshot(snapshot, partner));
     }
   } catch (e) {
@@ -118,6 +115,31 @@ export default async function Dashboard({
           />
         </div>
       </div>
+
+      {/* Private partner data (only when a Steamworks key is configured) */}
+      {partner?.connected && (
+        <div className="panel">
+          <h2>Your Steamworks data <span className="badge schedule_for_sale">connected</span></h2>
+          <div className="stat-grid">
+            <Stat
+              label="Units (30d)"
+              value={partner.unitsTrailing30d !== null ? partner.unitsTrailing30d.toLocaleString() : "—"}
+            />
+            <Stat
+              label="Net revenue (30d)"
+              value={
+                partner.revenueTrailing30dCents !== null
+                  ? `$${(partner.revenueTrailing30dCents / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                  : "—"
+              }
+            />
+            <Stat
+              label="Wishlist adds (30d, net)"
+              value={partner.wishlistAdds30d !== null ? partner.wishlistAdds30d.toLocaleString() : "—"}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Rivals */}
       <div className="panel">

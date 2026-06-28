@@ -28,6 +28,7 @@ export function inputFromSnapshot(
     playerTrend: null,
     rivalsOnSaleFraction: rivalsOnSaleFraction(snap.rivals),
     wishlistCount: partner?.wishlistCount ?? null,
+    recentWishlistAdds: partner?.wishlistAdds30d ?? null,
     now,
   };
 }

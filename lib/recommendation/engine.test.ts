@@ -21,6 +21,7 @@ function baseInput(overrides: Partial<RecommendationInput> = {}): Recommendation
     playerTrend: 0,
     rivalsOnSaleFraction: 0,
     wishlistCount: null,
+    recentWishlistAdds: null,
     now: new Date("2026-02-01T00:00:00Z"), // off-season, far from any sale
     ...overrides,
   };

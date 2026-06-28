@@ -3,33 +3,56 @@
 Self-hosted, always-on Node process behind Nginx. No serverless constraints, so the
 scheduler and Postgres live on the same box (or a managed DB).
 
-## 1. Provision
+## 1. Provision (one time)
 
-- Ubuntu droplet, Node 22 (via `nvm` or NodeSource), and Postgres 16.
-- Create the DB and user:
-  ```sql
-  CREATE DATABASE whentocut;
-  CREATE USER whentocut WITH PASSWORD '...';
-  GRANT ALL PRIVILEGES ON DATABASE whentocut TO whentocut;
-  ```
-
-## 2. App
+Run the bootstrap script on a fresh Ubuntu droplet (installs Node 22, PM2, Postgres,
+Nginx; clones the repo to `/opt/whentocut`; creates `.env` from the template):
 
 ```bash
-git clone <repo> /opt/whentocut && cd /opt/whentocut
-cp .env.example .env        # fill in DATABASE_URL, ENCRYPTION_KEY, CRON_SECRET, Resend, DO Spaces
-npm ci
-npx prisma migrate deploy   # apply schema
-npm run build
+ssh root@<droplet-ip>
+curl -fsSL https://raw.githubusercontent.com/tokenberry/whentocut/main/scripts/provision.sh | \
+  REPO_URL=https://github.com/tokenberry/whentocut.git bash
 ```
 
-Run under **PM2** (or a systemd unit):
+Then create the DB/user and fill in `.env`:
+
+```sql
+CREATE DATABASE whentocut;
+CREATE USER whentocut WITH PASSWORD '...';
+GRANT ALL PRIVILEGES ON DATABASE whentocut TO whentocut;
+```
+```bash
+cd /opt/whentocut
+nano .env   # DATABASE_URL, STEAMWORKS_PARTNER_KEY, CRON_SECRET, ENCRYPTION_KEY, Resend, DO Spaces
+./scripts/deploy.sh main   # first manual deploy: install + migrate + build + pm2 start
+```
+
+## 2. Auto-deploy from GitHub
+
+`.github/workflows/deploy.yml` SSHes into the droplet and runs `scripts/deploy.sh` on
+every push to `main` (and `claude/**` branches), or on manual **Run workflow**. It does:
+`git reset --hard origin/<branch>` → `npm ci` → `prisma migrate deploy` (if `DATABASE_URL`
+set) → `npm run build` → `pm2 reload`.
+
+**Add these repo secrets** (GitHub → Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|--------|-------|
+| `DROPLET_HOST` | droplet IP / hostname |
+| `DROPLET_USER` | deploy SSH user (e.g. `root` or a `deploy` user) |
+| `DROPLET_SSH_KEY` | **private** key whose public half is in the droplet's `~/.ssh/authorized_keys` |
+| `DROPLET_PORT` | optional, defaults to `22` |
+
+Generate a dedicated deploy key:
 
 ```bash
-npm i -g pm2
-pm2 start "npm run start" --name whentocut
-pm2 save && pm2 startup
+ssh-keygen -t ed25519 -f deploy_key -N ""        # locally
+ssh-copy-id -i deploy_key.pub <user>@<droplet-ip>  # authorize the public half
+# paste the PRIVATE key (deploy_key) into the DROPLET_SSH_KEY secret, then delete it locally
 ```
+
+After that, pushing to GitHub redeploys automatically — watch the run under the repo's
+**Actions** tab.
 
 ## 3. Nginx + TLS
 

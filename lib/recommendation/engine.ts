@@ -208,6 +208,17 @@ function pushDemandReasons(input: RecommendationInput, reasons: string[]): void 
       `${input.wishlistCount.toLocaleString()} wishlisters will get a notification when the discount goes live.`,
     );
   }
+  if (input.recentWishlistAdds !== null) {
+    if (input.recentWishlistAdds > 0) {
+      reasons.push(
+        `+${input.recentWishlistAdds.toLocaleString()} net wishlist adds in the last 30 days — fresh demand to convert with a discount.`,
+      );
+    } else if (input.recentWishlistAdds < 0) {
+      reasons.push(
+        `Net wishlist additions are negative over the last 30 days — interest is cooling; a discount can re-engage.`,
+      );
+    }
+  }
 }
 
 function applyErosionGuard(rec: Recommendation, erosion: boolean): Recommendation {

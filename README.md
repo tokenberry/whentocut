@@ -18,8 +18,13 @@ reasons spelled out.
    release date), [SteamSpy](https://steamspy.com/api.php) (owners, reviews, tags),
    Steam Web API `GetNumberOfCurrentPlayers` (live players). Rivals are discovered by
    the game's top tag.
-2. **Optional private data**: connect a Steamworks partner Web API key to enrich
-   recommendations with your wishlists/sales (server-side only, encrypted at rest).
+2. **Optional private data**: set a Steamworks **partner** Web API key
+   (`STEAMWORKS_PARTNER_KEY`, or a financial key) and the dashboard enriches
+   recommendations with your trailing-30-day **net revenue, units, and wishlist adds**
+   from `partner.steam-api.com` (`IPartnerFinancialsService`). The key needs the
+   "Sales Data" permission, is used **server-side only**, and is never logged or sent to
+   the browser. `POST /api/connect { webApiKey }` validates a key and lists the appids it
+   can access. Without a key, the app runs on public data alone.
 3. **Recommendation engine** (`lib/recommendation/engine.ts`): a pure, unit-tested
    function that enforces Steam's hard rules first, then applies best practice — ease in,
    deepen depth over time, align to seasonal sales — with a value-erosion guardrail.
@@ -60,7 +65,10 @@ Try a real game: open `/dashboard/1145360` (Hades) or `/dashboard/413150` (Stard
 
 - ✅ Phase 1 — public data clients + dashboard
 - ✅ Phase 2 — recommendation engine + sales calendar (+ tests)
-- 🚧 Phase 3 — Steamworks partner key (seam in place; live endpoints TBD)
+- ✅ Phase 3 — live Steamworks partner endpoints (sales/revenue/wishlist enrichment)
 - 🚧 Phase 4 — Postgres persistence, snapshot history, cron + alerts (schema + stubs in place)
 
-See [DEPLOY.md](./DEPLOY.md) for running on a DigitalOcean droplet.
+CI/CD: pushing to GitHub auto-deploys to the droplet via
+[`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml). See
+[DEPLOY.md](./DEPLOY.md) for droplet provisioning, the auto-deploy secrets, Nginx/TLS,
+and DO Spaces.

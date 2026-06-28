@@ -25,8 +25,10 @@ export interface RecommendationInput {
   playerTrend: number | null;
   /** Fraction of tracked rivals currently on sale (0..1), or null if unknown. */
   rivalsOnSaleFraction: number | null;
-  /** Owner's current wishlist count (from partner API), or null if not connected. */
+  /** Owner's outstanding wishlist total (from partner API), or null if unknown. */
   wishlistCount: number | null;
+  /** Net wishlist adds over the trailing window (partner API), or null. A demand signal. */
+  recentWishlistAdds: number | null;
   /** Evaluation time. */
   now: Date;
 }
