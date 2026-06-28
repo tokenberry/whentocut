@@ -43,10 +43,10 @@ set -a
 set +a
 
 if [ -n "${DATABASE_URL:-}" ]; then
-  echo "==> Applying database migrations"
-  npx prisma migrate deploy
+  echo "==> Syncing database schema (prisma db push)"
+  npx prisma db push --skip-generate
 else
-  echo "==> DATABASE_URL not set — skipping migrations"
+  echo "==> DATABASE_URL not set — skipping schema sync"
 fi
 
 echo "==> Building (heap cap ${BUILD_HEAP_MB}MB)"

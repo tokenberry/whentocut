@@ -1,6 +1,5 @@
 // WhenToCut data model. Postgres on the DigitalOcean droplet.
-// Phase 4 wires the app to this; until then it documents the intended schema.
-//   npx prisma migrate dev --name init   (after setting DATABASE_URL)
+// Schema is applied with `prisma db push` during deploy (see scripts/deploy.sh).
 
 generator client {
   provider = "prisma-client-js"
@@ -11,22 +10,85 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// A Steam game the owner is tracking for discount advice.
-model TrackedGame {
-  id           String   @id @default(cuid())
-  appid        Int      @unique
-  name         String
-  createdAt    DateTime @default(now())
-  snapshots    Snapshot[]
-  alerts       AlertSubscription[]
-  credential   PartnerCredential?
+// ---- Auth.js (NextAuth) models ------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  plan          Plan      @default(FREE)
+  createdAt     DateTime  @default(now())
+
+  accounts          Account[]
+  sessions          Session[]
+  trackedGames      TrackedGame[]
+  alerts            AlertSubscription[]
+  partnerCredential PartnerCredential?
 }
 
-/// Periodic capture of public market state. History powers trends, cooldown tracking,
-/// and prior-discount counts that a single live snapshot cannot provide.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+// ---- Domain models (per user) -------------------------------------------------
+
+/// A Steam game a user tracks for discount advice.
+model TrackedGame {
+  id        String   @id @default(cuid())
+  userId    String
+  appid     Int
+  name      String
+  createdAt DateTime @default(now())
+
+  user   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alerts AlertSubscription[]
+
+  @@unique([userId, appid])
+  @@index([userId])
+}
+
+/// Periodic capture of public market state (global, shared across users). History
+/// powers trends, cooldown tracking, and prior-discount counts.
 model Snapshot {
   id                 String   @id @default(cuid())
-  game               TrackedGame @relation(fields: [appid], references: [appid])
   appid              Int
   capturedAt         DateTime @default(now())
   currentPriceCents  Int?
@@ -34,36 +96,37 @@ model Snapshot {
   currentDiscountPct Int      @default(0)
   currentPlayers     Int?
   rivalsOnSaleFrac   Float?
-  // Full snapshot JSON archived to DO Spaces; this row keeps the queryable fields.
-  archiveKey         String?
+  archiveKey         String? // full snapshot JSON archived to DO Spaces
 
   @@index([appid, capturedAt])
 }
 
-/// Owner's Steamworks partner Web API key — encrypted at rest, server-side only.
+/// A user's Steamworks partner Web API key — encrypted at rest, server-side only.
 model PartnerCredential {
-  id            String   @id @default(cuid())
-  game          TrackedGame @relation(fields: [appid], references: [appid])
-  appid         Int      @unique
-  // AES-GCM ciphertext + iv of the Web API key. Never store plaintext.
-  encryptedKey  String
-  iv            String
-  partnerId     String?
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  encryptedKey String // AES-GCM ciphertext (hex)
+  iv           String // AES-GCM iv (hex)
+  authTag      String // AES-GCM auth tag (hex)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// Where to send alerts when a recommendation triggers.
 model AlertSubscription {
-  id          String   @id @default(cuid())
-  game        TrackedGame @relation(fields: [appid], references: [appid])
+  id          String       @id @default(cuid())
+  userId      String
   appid       Int
   channel     AlertChannel
-  // email address or Discord webhook URL depending on channel
-  target      String
-  createdAt   DateTime @default(now())
+  target      String // email address or Discord webhook URL
+  createdAt   DateTime     @default(now())
   lastFiredAt DateTime?
 
-  @@index([appid])
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackedGame TrackedGame @relation(fields: [userId, appid], references: [userId, appid], onDelete: Cascade)
+
+  @@index([userId, appid])
 }
 
 enum AlertChannel {

@@ -3,6 +3,7 @@ import { buildSnapshot } from "@/lib/steam/aggregate";
 import { getPartnerStatsForApp } from "@/lib/steam/partnerData";
 import { inputFromSnapshot } from "@/lib/recommendation/fromSnapshot";
 import { recommend } from "@/lib/recommendation/engine";
+import { auth } from "@/auth";
 
 /**
  * GET /api/recommend/:appid
@@ -28,8 +29,9 @@ export async function GET(
       );
     }
 
-    // Partner stats are optional — present only when a key is configured server-side.
-    const partner = await getPartnerStatsForApp(appid);
+    // Partner stats are optional — the signed-in user's key, or the env fallback.
+    const session = await auth();
+    const partner = await getPartnerStatsForApp(appid, session?.user?.id ?? null);
 
     const recommendation = recommend(inputFromSnapshot(snapshot, partner));
     return NextResponse.json({ snapshot, recommendation, partner });

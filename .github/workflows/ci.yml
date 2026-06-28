@@ -1,0 +1,27 @@
+name: CI
+
+# Validate every push/PR: install (runs prisma generate), typecheck, build, test.
+# Runs on GitHub runners which can download Prisma engines (the dev sandbox can't).
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          # Build-time placeholders — pages are dynamic, so nothing connects at build.
+          AUTH_SECRET: ci-placeholder-secret
+          AUTH_TRUST_HOST: "true"
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db?schema=public
+          ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+      - run: npm test

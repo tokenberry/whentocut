@@ -6,6 +6,9 @@ import { inputFromSnapshot } from "@/lib/recommendation/fromSnapshot";
 import { recommend } from "@/lib/recommendation/engine";
 import { Recommendation } from "@/lib/recommendation/types";
 import { GameSnapshot } from "@/lib/steam/types";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
+import { trackGame, untrackGame } from "@/app/account/actions";
 
 export const dynamic = "force-dynamic"; // always reflect live Steam data
 
@@ -24,15 +27,21 @@ function price(cents: number | null, currency: string | null): string {
 
 export default async function Dashboard({
   params,
+  searchParams,
 }: {
   params: Promise<{ appid: string }>;
+  searchParams: Promise<{ limit?: string }>;
 }) {
   const { appid: raw } = await params;
+  const { limit } = await searchParams;
   const appid = Number(raw);
 
   if (!Number.isInteger(appid) || appid <= 0) {
     return <Shell><p className="error">Invalid appID.</p></Shell>;
   }
+
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
 
   let snapshot: GameSnapshot | null = null;
   let rec: Recommendation | null = null;
@@ -42,7 +51,7 @@ export default async function Dashboard({
   try {
     snapshot = await buildSnapshot(appid);
     if (snapshot) {
-      partner = await getPartnerStatsForApp(appid);
+      partner = await getPartnerStatsForApp(appid, userId);
       rec = recommend(inputFromSnapshot(snapshot, partner));
     }
   } catch (e) {
@@ -52,6 +61,14 @@ export default async function Dashboard({
   if (error) return <Shell><p className="error">Failed to load: {error}</p></Shell>;
   if (!snapshot || !rec)
     return <Shell><p className="error">No Steam app found for appid {appid}.</p></Shell>;
+
+  const isTracked = userId
+    ? Boolean(
+        await prisma.trackedGame.findUnique({
+          where: { userId_appid: { userId, appid } },
+        }),
+      )
+    : false;
 
   const { core, stats, rivals } = snapshot;
 
@@ -65,6 +82,28 @@ export default async function Dashboard({
         </a>{" "}
         · {core.genres.join(", ") || "—"}
       </p>
+
+      {/* Track control */}
+      <div style={{ margin: "12px 0" }}>
+        {!userId ? (
+          <Link href="/signin" className="link-btn">
+            Sign in to track &amp; get alerts
+          </Link>
+        ) : isTracked ? (
+          <form action={untrackGame.bind(null, core.appid)}>
+            <button className="link-btn" type="submit">✓ Tracking — untrack</button>
+          </form>
+        ) : (
+          <form action={trackGame.bind(null, core.appid, core.name)}>
+            <button type="submit">＋ Track this game</button>
+          </form>
+        )}
+        {limit === "1" && (
+          <p className="error" style={{ marginTop: 8 }}>
+            Free plan tracks 1 game. <Link href="/account">Upgrade to Pro</Link> to track more.
+          </p>
+        )}
+      </div>
 
       {/* Recommendation */}
       <div className="panel">
@@ -186,16 +225,7 @@ export default async function Dashboard({
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="container">
-      <div className="brand">
-        <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
-          When<span>ToCut</span>
-        </Link>
-      </div>
-      <div style={{ marginTop: 16 }}>{children}</div>
-    </div>
-  );
+  return <div className="container">{children}</div>;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
