@@ -11,6 +11,7 @@ export default async function SignIn({
   const session = await auth();
   if (session) redirect("/account");
   const { sent } = await searchParams;
+  const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID);
 
   return (
     <div className="container">
@@ -18,18 +19,21 @@ export default async function SignIn({
       <p className="muted">Save games, get discount alerts, and connect your Steam data.</p>
 
       <div className="panel" style={{ maxWidth: 420 }}>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: "/account" });
-          }}
-        >
-          <button type="submit" style={{ width: "100%" }}>
-            Continue with Google
-          </button>
-        </form>
-
-        <div className="divider">or</div>
+        {googleEnabled && (
+          <>
+            <form
+              action={async () => {
+                "use server";
+                await signIn("google", { redirectTo: "/account" });
+              }}
+            >
+              <button type="submit" style={{ width: "100%" }}>
+                Continue with Google
+              </button>
+            </form>
+            <div className="divider">or</div>
+          </>
+        )}
 
         {sent ? (
           <p className="sale-yes">✓ Check your email for a sign-in link.</p>

@@ -17,7 +17,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "database" },
   providers: [
-    Google,
+    // Google is optional — only enabled once its env vars are set, so the app can run
+    // on email magic-link alone.
+    ...(process.env.AUTH_GOOGLE_ID ? [Google] : []),
     Resend({ from: process.env.AUTH_EMAIL_FROM ?? "login@whentocut.com" }),
   ],
   pages: { signIn: "/signin" },
