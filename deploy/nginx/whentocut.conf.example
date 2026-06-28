@@ -12,7 +12,7 @@ server {
     listen 80;
     listen [::]:80;
 
-    server_name whentocut.example.com;   # <-- your subdomain (needs a DNS A record -> droplet IP)
+    server_name whentocut.com www.whentocut.com;   # apex + www (A records -> droplet IP)
 
     location / {
         proxy_pass http://127.0.0.1:3005;   # <-- must match PORT in .env
