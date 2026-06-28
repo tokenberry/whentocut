@@ -1,0 +1,195 @@
+:root {
+  --bg: #0b0f17;
+  --panel: #131a26;
+  --panel-2: #1a2333;
+  --border: #243049;
+  --text: #e6ecf5;
+  --muted: #93a1b8;
+  --accent: #66c0f4; /* Steam blue */
+  --green: #58d68d;
+  --amber: #f5c542;
+  --red: #ec7063;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  font-size: 22px;
+}
+
+.brand span {
+  color: var(--accent);
+}
+
+.tagline {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+input[type="text"] {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 16px;
+  flex: 1;
+  min-width: 220px;
+}
+
+button {
+  background: var(--accent);
+  color: #04121d;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.examples a {
+  margin-right: 14px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.badge.discount_now {
+  background: rgba(88, 214, 141, 0.15);
+  color: var(--green);
+}
+.badge.schedule_for_sale {
+  background: rgba(102, 192, 244, 0.15);
+  color: var(--accent);
+}
+.badge.hold {
+  background: rgba(147, 161, 184, 0.15);
+  color: var(--muted);
+}
+.badge.blocked {
+  background: rgba(236, 112, 99, 0.15);
+  color: var(--red);
+}
+
+.rec-headline {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 10px 0 6px;
+}
+
+.reasons {
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
+.reasons li {
+  margin: 6px 0;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.stat .label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.stat .value {
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+th,
+td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+th {
+  color: var(--muted);
+  font-weight: 600;
+}
+.sale-yes {
+  color: var(--green);
+  font-weight: 700;
+}
+.sale-no {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--red);
+}
+
+h2 {
+  margin-bottom: 6px;
+}

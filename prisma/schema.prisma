@@ -1,0 +1,72 @@
+// WhenToCut data model. Postgres on the DigitalOcean droplet.
+// Phase 4 wires the app to this; until then it documents the intended schema.
+//   npx prisma migrate dev --name init   (after setting DATABASE_URL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A Steam game the owner is tracking for discount advice.
+model TrackedGame {
+  id           String   @id @default(cuid())
+  appid        Int      @unique
+  name         String
+  createdAt    DateTime @default(now())
+  snapshots    Snapshot[]
+  alerts       AlertSubscription[]
+  credential   PartnerCredential?
+}
+
+/// Periodic capture of public market state. History powers trends, cooldown tracking,
+/// and prior-discount counts that a single live snapshot cannot provide.
+model Snapshot {
+  id                 String   @id @default(cuid())
+  game               TrackedGame @relation(fields: [appid], references: [appid])
+  appid              Int
+  capturedAt         DateTime @default(now())
+  currentPriceCents  Int?
+  basePriceCents     Int?
+  currentDiscountPct Int      @default(0)
+  currentPlayers     Int?
+  rivalsOnSaleFrac   Float?
+  // Full snapshot JSON archived to DO Spaces; this row keeps the queryable fields.
+  archiveKey         String?
+
+  @@index([appid, capturedAt])
+}
+
+/// Owner's Steamworks partner Web API key — encrypted at rest, server-side only.
+model PartnerCredential {
+  id            String   @id @default(cuid())
+  game          TrackedGame @relation(fields: [appid], references: [appid])
+  appid         Int      @unique
+  // AES-GCM ciphertext + iv of the Web API key. Never store plaintext.
+  encryptedKey  String
+  iv            String
+  partnerId     String?
+  createdAt     DateTime @default(now())
+}
+
+/// Where to send alerts when a recommendation triggers.
+model AlertSubscription {
+  id          String   @id @default(cuid())
+  game        TrackedGame @relation(fields: [appid], references: [appid])
+  appid       Int
+  channel     AlertChannel
+  // email address or Discord webhook URL depending on channel
+  target      String
+  createdAt   DateTime @default(now())
+  lastFiredAt DateTime?
+
+  @@index([appid])
+}
+
+enum AlertChannel {
+  EMAIL
+  DISCORD
+}
