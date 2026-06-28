@@ -12,6 +12,7 @@ export default async function SignIn({
   if (session) redirect("/account");
   const { sent } = await searchParams;
   const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID);
+  const resendEnabled = Boolean(process.env.AUTH_RESEND_KEY);
 
   return (
     <div className="container">
@@ -35,22 +36,23 @@ export default async function SignIn({
           </>
         )}
 
-        {sent ? (
-          <p className="sale-yes">✓ Check your email for a sign-in link.</p>
-        ) : (
-          <form
-            action={async (formData: FormData) => {
-              "use server";
-              const email = String(formData.get("email") ?? "").trim();
-              await signIn("resend", { email, redirectTo: "/account" });
-            }}
-          >
-            <input type="email" name="email" placeholder="you@studio.com" required />
-            <button type="submit" style={{ width: "100%", marginTop: 10 }}>
-              Email me a magic link
-            </button>
-          </form>
-        )}
+        {resendEnabled &&
+          (sent ? (
+            <p className="sale-yes">✓ Check your email for a sign-in link.</p>
+          ) : (
+            <form
+              action={async (formData: FormData) => {
+                "use server";
+                const email = String(formData.get("email") ?? "").trim();
+                await signIn("resend", { email, redirectTo: "/account" });
+              }}
+            >
+              <input type="email" name="email" placeholder="you@studio.com" required />
+              <button type="submit" style={{ width: "100%", marginTop: 10 }}>
+                Email me a magic link
+              </button>
+            </form>
+          ))}
       </div>
     </div>
   );
