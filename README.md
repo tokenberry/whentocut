@@ -69,6 +69,7 @@ Try a real game: open `/dashboard/1145360` (Hades) or `/dashboard/413150` (Stard
 - 🚧 Phase 4 — Postgres persistence, snapshot history, cron + alerts (schema + stubs in place)
 
 CI/CD: pushing to GitHub auto-deploys to the droplet via
-[`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml). See
-[DEPLOY.md](./DEPLOY.md) for droplet provisioning, the auto-deploy secrets, Nginx/TLS,
-and DO Spaces.
+[`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml).
+- Fresh droplet → [DEPLOY.md](./DEPLOY.md) (provisioning, secrets, Nginx/TLS, DO Spaces).
+- **Droplet already running another app → [SHARED-DROPLET.md](./SHARED-DROPLET.md)**
+  (non-destructive setup: own port, own PM2 process, optional subdomain; no DB needed).
