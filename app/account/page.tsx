@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { untrackGame, FREE_TRACK_LIMIT } from "./actions";
+import { untrackGame } from "./actions";
+import { FREE_TRACK_LIMIT } from "@/lib/plan";
 import ConnectSteamForm from "./ConnectSteamForm";
 
 export const dynamic = "force-dynamic";

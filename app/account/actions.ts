@@ -4,9 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-
-/** Free plan: track a single game. Pro: unlimited. */
-export const FREE_TRACK_LIMIT = 1;
+import { FREE_TRACK_LIMIT } from "@/lib/plan";
 
 export async function trackGame(appid: number, name: string) {
   const session = await auth();
