@@ -21,6 +21,10 @@ model User {
   plan          Plan      @default(FREE)
   createdAt     DateTime  @default(now())
 
+  // Polar billing (set by the subscription webhook)
+  polarCustomerId     String?
+  polarSubscriptionId String?
+
   accounts          Account[]
   sessions          Session[]
   trackedGames      TrackedGame[]
