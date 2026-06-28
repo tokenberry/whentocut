@@ -15,7 +15,7 @@ server {
     server_name whentocut.example.com;   # <-- your subdomain (needs a DNS A record -> droplet IP)
 
     location / {
-        proxy_pass http://127.0.0.1:3001;   # <-- must match PORT in .env
+        proxy_pass http://127.0.0.1:3005;   # <-- must match PORT in .env
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

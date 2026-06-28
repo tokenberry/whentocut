@@ -8,16 +8,24 @@ own Nginx subdomain. No database is required to run.
 
 ```bash
 ssh <user>@<droplet-ip>
+
+# This box has 2 GB RAM and no swap — add a swapfile so `next build` can't OOM.
+# Persisted to fstab so it survives the pending reboot. Skip if you already have swap.
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile \
+  && sudo mkswap /swapfile && sudo swapon /swapfile \
+  && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
 curl -fsSL https://raw.githubusercontent.com/tokenberry/whentocut/main/scripts/setup-shared.sh \
   -o setup-shared.sh
-REPO_URL=https://github.com/tokenberry/whentocut.git PORT=3001 bash setup-shared.sh
+REPO_URL=https://github.com/tokenberry/whentocut.git PORT=3005 bash setup-shared.sh
 ```
 
-That clones to `/opt/whentocut`, builds, and starts it under PM2 on port **3001**
-(change `PORT` if 3001 is taken). Check it:
+Port **3005** is free on your droplet (3000–3003 are taken by your other apps). The
+script clones to `/opt/whentocut`, builds, and starts under PM2 (name `whentocut`),
+bound to `127.0.0.1` so only Nginx can reach it. Check it:
 
 ```bash
-curl -sI http://127.0.0.1:3001/      # expect HTTP/1.1 200 OK
+curl -sI http://127.0.0.1:3005/      # expect HTTP/1.1 200 OK
 ```
 
 ## Why it's safe alongside your other app
@@ -27,9 +35,12 @@ curl -sI http://127.0.0.1:3001/      # expect HTTP/1.1 200 OK
 - **Own port + own PM2 name (`whentocut`)** — won't collide with your other process.
 - **Port check** — it aborts if the chosen port is already in use.
 
-## Add a subdomain (optional, recommended)
-1. DNS: add an `A` record `whentocut.<your-domain>` → droplet IP.
-2. Copy the template and point it at your port:
+## Add a subdomain (recommended)
+Your Nginx already fronts several sites (beckstar, bouncywars, eurotruckmaps, …), so this
+just adds one more file alongside them — nothing existing is touched.
+
+1. DNS: add an `A` record `whentocut.<your-domain>` → droplet IP (188.166.144.150).
+2. Copy the template and point it at port **3005**:
    ```bash
    sudo cp /opt/whentocut/deploy/nginx/whentocut.conf.example \
            /etc/nginx/sites-available/whentocut.conf
