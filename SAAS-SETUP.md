@@ -65,6 +65,26 @@ crontab -e
 The evaluator only emails when a game's recommendation **changes** (no daily spam), and
 links back to the dashboard + Steamworks.
 
+## 7. Billing — Polar (Phase 5c)
+After creating the **WhenToCut Pro** product (monthly price, no benefits):
+1. **Settings → Developers → New Token** → copy the **Organization Access Token**.
+2. **Settings → Webhooks → Add Endpoint**:
+   - URL: `https://whentocut.com/api/polar/webhook`
+   - Format: **Raw**
+   - Events: the **subscription.*** events (at least `subscription.active`,
+     `subscription.updated`, `subscription.revoked`)
+   - Copy the **signing secret**.
+3. **Product id:** open the product → copy its id (in the page URL / details).
+4. Add to `.env` and `pm2 reload whentocut --update-env`:
+   ```dotenv
+   POLAR_ACCESS_TOKEN="polar_oat_..."
+   POLAR_WEBHOOK_SECRET="..."
+   POLAR_PRODUCT_ID="..."
+   POLAR_SERVER="production"
+   ```
+Then `/account` shows an **Upgrade to Pro** button → Polar checkout → on success the
+webhook flips the user to **PRO**. Cancel/refund flips them back on `subscription.revoked`.
+
 ## Notes
 - **Free vs Pro:** Free tracks 1 game; Pro is unlimited. Alerts currently go to all
   tracked games; they'll be gated to Pro when billing (Polar) lands in 5c.
