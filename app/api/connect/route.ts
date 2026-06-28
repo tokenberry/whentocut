@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listPartnerApps } from "@/lib/steam/partnerClient";
 import { PartnerAuthError, PartnerApiError } from "@/lib/steam/partnerApiClient";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
+import { encryptSecret } from "@/lib/crypto";
 
 /**
  * POST /api/connect  { webApiKey }
- * Validates a Steamworks publisher/financial key by calling
- * GetPartnerAppListForWebAPIKey and returns the appids it can access.
+ * Validates a Steamworks publisher/financial key (GetPartnerAppListForWebAPIKey) and,
+ * for the signed-in user, stores it ENCRYPTED (AES-GCM) in PartnerCredential.
  *
  * The key is handled server-side only and is NEVER echoed, logged, or returned.
- * Single-tenant deployments set the key via env (STEAMWORKS_PARTNER_KEY); this route is
- * for validating a key before saving it. Encrypted persistence lands in Phase 4.
  */
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+
   let body: { webApiKey?: string };
   try {
     body = await req.json();
@@ -25,7 +31,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const apps = await listPartnerApps(webApiKey);
+    const apps = await listPartnerApps(webApiKey); // validates the key
+    const enc = encryptSecret(webApiKey);
+    await prisma.partnerCredential.upsert({
+      where: { userId: session.user.id },
+      create: { userId: session.user.id, ...enc },
+      update: enc,
+    });
     return NextResponse.json({
       ok: true,
       connected: true,
@@ -44,4 +56,14 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: "Failed to validate key" }, { status: 502 });
   }
+}
+
+/** DELETE /api/connect — disconnect the user's stored key. */
+export async function DELETE() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+  await prisma.partnerCredential.deleteMany({ where: { userId: session.user.id } });
+  return NextResponse.json({ ok: true, connected: false });
 }

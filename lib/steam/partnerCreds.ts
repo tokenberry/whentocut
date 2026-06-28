@@ -1,23 +1,38 @@
 import { PartnerCredentials } from "./partnerClient";
+import { prisma } from "@/lib/db";
+import { decryptSecret } from "@/lib/crypto";
 
 /**
- * Resolve partner credentials for an app. Single-tenant for now: the publisher's own
- * key comes from the server environment (STEAMWORKS_PARTNER_KEY, or a dedicated
- * STEAMWORKS_FINANCIAL_KEY). This is the one seam Phase 4 swaps for a per-app, encrypted
- * PartnerCredential store without touching callers.
+ * Resolve partner credentials for a request:
+ *   1. the signed-in user's own encrypted Steamworks key (per-user, from Postgres), else
+ *   2. the server's single-tenant env key (owner fallback), else null.
  *
- * Returns null when no key is configured so the app degrades to public-only data.
+ * Returns null when nothing is configured so the app degrades to public-only data.
  * Server-side only — never import from a client component.
  */
-export function resolvePartnerCreds(_appid: number): PartnerCredentials | null {
-  const webApiKey =
+export async function resolvePartnerCreds(
+  userId?: string | null,
+): Promise<PartnerCredentials | null> {
+  if (userId) {
+    const cred = await prisma.partnerCredential.findUnique({ where: { userId } });
+    if (cred) {
+      return {
+        webApiKey: decryptSecret({
+          encryptedKey: cred.encryptedKey,
+          iv: cred.iv,
+          authTag: cred.authTag,
+        }),
+      };
+    }
+  }
+
+  const envKey =
     process.env.STEAMWORKS_FINANCIAL_KEY?.trim() ||
     process.env.STEAMWORKS_PARTNER_KEY?.trim();
-  if (!webApiKey) return null;
-  return { webApiKey };
+  return envKey ? { webApiKey: envKey } : null;
 }
 
-/** Whether any partner key is configured at all. */
+/** Whether a single-tenant env key is configured at all. */
 export function partnerConfigured(): boolean {
   return Boolean(
     process.env.STEAMWORKS_FINANCIAL_KEY?.trim() ||

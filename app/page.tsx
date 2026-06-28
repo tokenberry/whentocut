@@ -34,12 +34,11 @@ export default function Home() {
 
   return (
     <div className="container">
-      <div className="brand">
-        When<span>ToCut</span>
-      </div>
+      <h1 className="tagline" style={{ fontSize: 22, fontWeight: 700, color: "var(--text)" }}>
+        Know when to discount your Steam game — and by how much.
+      </h1>
       <p className="tagline">
-        Know when to discount your Steam game — and by how much. Based on price level,
-        rivals, player numbers, and Steam&apos;s own discount rules.
+        Based on price level, rivals, player numbers, and Steam&apos;s own discount rules.
       </p>
 
       <div className="panel">
