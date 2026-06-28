@@ -78,6 +78,10 @@ model TrackedGame {
   name      String
   createdAt DateTime @default(now())
 
+  // Alert de-duplication: only email when the recommendation meaningfully changes.
+  lastAlertedAt      DateTime?
+  lastAlertSignature String?
+
   user   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   alerts AlertSubscription[]
 

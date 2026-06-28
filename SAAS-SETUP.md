@@ -49,8 +49,24 @@ Once CI is green and the env is set, merge the PR. The deploy runs `prisma db pu
 - Track a game from its dashboard; manage it at `/account`
 - Optionally connect your Steamworks key under **Account → Steamworks data**
 
+## 6. Email alerts (Phase 5b — included in this PR)
+Alerts reuse your Resend setup. Ensure `.env` has (the alert key can equal the auth key):
+```dotenv
+RESEND_API_KEY=""          # optional — falls back to AUTH_RESEND_KEY
+ALERT_FROM_EMAIL="alerts@whentocut.com"
+CRON_SECRET="<openssl rand -hex 16>"
+```
+Add a daily cron on the droplet to evaluate tracked games and email when it's time:
+```bash
+crontab -e
+# 09:00 UTC daily:
+0 9 * * *  curl -fsS -X POST https://whentocut.com/api/cron/evaluate -H "x-cron-secret: YOUR_CRON_SECRET"
+```
+The evaluator only emails when a game's recommendation **changes** (no daily spam), and
+links back to the dashboard + Steamworks.
+
 ## Notes
-- **Free vs Pro:** Free tracks 1 game; Pro is unlimited + alerts. Billing (Lemon Squeezy)
-  and email alert delivery are the next phases (5b/5c).
+- **Free vs Pro:** Free tracks 1 game; Pro is unlimited. Alerts currently go to all
+  tracked games; they'll be gated to Pro when billing (Polar) lands in 5c.
 - Schema changes use `prisma db push` for now (no migration files); we can adopt
   versioned migrations once the schema stabilizes.
